@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Modern Resume{% endblock %}
+
+{% block body %}
+<div class="resume-modern">
+  <div class="resume-header">
+    <img src="{{ url_for('static', filename='uploads/' ~ (info.profile_pic or 'default.jpg')) }}" alt="Profile Picture" class="resume-profile-pic">
+    <h1>{{ info.full_name }}</h1>
+    <p>{{ info.resume_email }} | {{ info.phone }}</p>
+  </div>
+  <div class="resume-summary">
+    <h2>Professional Summary</h2>
+    <p>{{ info.summary }}</p>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/modern.css') }}">
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="Welcome">
+  <h1>Welcome, {{ current_user.username }}!</h1>
+  <h4>Fill in your basic details and choose a template to start building your resume.</h4>
+  <br>
+  <div class="profile-container">
+    <div class="profile-header">
+      <form method="POST" action="/home" id="quick-details-form">
+        <label for="full_name">Enter Your Full Name</label>
+        <input type="text" name="full_name" placeholder="Full Name" value="{{ current_user.username }}" required>
+
+        <label for="resume_email">Enter Your Email Address</label>
+        <input type="email" name="resume_email" placeholder="Email" value="{{ current_user.email }}" required>
+
+        <label for="phone">Enter Your Phone Number</label>
+        <input type="tel" name="phone" placeholder="Phone" pattern="\d{10}" required>
+
+        <label for="github">Enter Your GitHub Link</label>
+        <input type="url" name="github" placeholder="GitHub Link">
+
+        <label for="linkedin">Enter Your LinkedIn Link</label>
+        <input type="url" name="linkedin" placeholder="LinkedIn Link">
+
+        <label for="summary">A Short Summary About You For Resume</label>
+        <textarea name="summary" id="summary" placeholder="Short Summary" required></textarea>
+
+        <h3>Select Resume Template</h3>
+        <div class="template-selection">
+          <label for="classic">
+            <input type="radio" id="classic" name="template" value="classic" checked>
+            <img src="{{ url_for('static', filename='templates_image/classic.png') }}" alt="Classic Template" class="template-thumbnail" style="width: 150px; height: auto;">
+          </label>
+
+          <label for="modern">
+            <input type="radio" id="modern" name="template" value="modern">
+            <img src="{{ url_for('static', filename='templates_image/modern.png') }}" alt="Modern Template" class="template-thumbnail" style="width: 150px; height: auto;">
+          </label>
+        </div>
+
+        <button type="submit" id="button">Start Building Resume</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Resume Builder{% endblock %}</title>
+</head>
+<body>
+
+    {% block nav %}
+    <nav class="navbar">
+        <div class="nav-logo">ResumeBuilder</div>
+        <ul class="nav-links" id="navLinks">
+            {% if current_user.is_authenticated %}
+                <li><a href="/home">Home</a></li>
+                <li><a href="/">Create</a></li>
+                <li><a href="/profile">Profile</a></li>
+                <li><a href="/logout">Logout</a></li>
+            {% else %}
+                <li><a href="/login">Login</a></li>
+                <li><a href="/Sign-Up">Sign up</a></li>
+            {% endif %}
+        </ul>
+        <button class="nav-toggle" id="navToggle">&#9776;</button>
+    </nav>
+    {% endblock %}
+
+    <main>
+        
+
+{% block body %}
+
+
+{% endblock %}
+    </main>
+
+</body>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const flashMessages = [
+          {% for category, message in messages %}
+            {{ message | tojson }},
+          {% endfor %}
+        ];
+        flashMessages.forEach(msg => popup(msg));
+      });
+    </script>
+  {% endif %}
+{% endwith %}
+
+</html>

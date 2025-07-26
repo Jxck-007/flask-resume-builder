@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Profile | ResumeBuilder{% endblock %}
+
+{% block body %}
+<div class="profile-container">
+  <h2>{{ current_user.username }}'s Profile</h2>
+  <p>Email: {{ current_user.email }}</p>
+
+  <hr>
+  <h3>Your Resume History</h3>
+  <div class="resume-history">
+    {% if current_user.resumes %}
+      <ul>
+        {% for resume in current_user.resumes %}
+          <li>
+            <strong>{{ resume.title }}</strong> - 
+            <em>{{ resume.style.capitalize() }}</em> Template - 
+            <a href="{{ url_for('views.view_resume', resume_id=resume.id) }}">View</a> |
+            <a href="{{ url_for('views.create_resume', resume_id=resume.id) }}">Edit</a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>You haven't created any resumes yet.</p>
+    {% endif %}
+  </div>
+
+  <hr>
+  <h3>Prefill Info for New Resumes</h3>
+  <form method="POST" enctype="multipart/form-data">
+    <label for="full_name">Full Name</label>
+    <input type="text" name="full_name" value="{{ info.full_name }}">
+
+    <label for="resume_email">Email</label>
+    <input type="email" name="resume_email" value="{{ info.resume_email }}">
+
+    <label for="phone">Phone</label>
+    <input type="tel" name="phone" value="{{ info.phone }}">
+
+    <label for="github">GitHub</label>
+    <input type="url" name="github" value="{{ info.github }}">
+
+    <label for="linkedin">LinkedIn</label>
+    <input type="url" name="linkedin" value="{{ info.linkedin }}">
+
+    <label for="summary">Summary</label>
+    <textarea name="summary">{{ info.summary }}</textarea>
+
+    <label for="address">Address</label>
+    <textarea name="address">{{ info.address }}</textarea>
+
+    <label for="profile_pic">Profile Picture</label>
+    <input type="file" name="profile_pic">
+    {% if info.profile_pic %}
+      <br><img src="{{ url_for('static', filename='uploads/' ~ info.profile_pic) }}" width="100">
+    {% endif %}
+
+    <br><button type="submit">Update Info</button>
+  </form>
+</div>
+<h3>Your Resume History</h3>
+<ul class="resume-history">
+  {% for resume in resumes %}
+    <li>
+      <strong>{{ resume.title }}</strong> - Style: {{ resume.style }}
+      <a href="{{ url_for('views.view_resume', resume_id=resume.id) }}">View</a> |
+      <a href="{{ url_for('views.create_resume', resume_id=resume.id) }}">Edit</a> |
+      <form method="POST" action="{{ url_for('views.delete_resume', resume_id=resume.id) }}" style="display:inline;">
+        <button type="submit" onclick="return confirm('Delete this resume?')">Delete</button>
+      </form>
+    </li>
+  {% else %}
+    <li>No resumes found.</li>
+  {% endfor %}
+</ul>
+<form method="POST" action="{{ url_for('views.delete_resume', resume_id=resume.id) }}">
+  <button type="submit" onclick="return confirm('Are you sure you want to delete this resume?')">Delete Resume</button>
+</form>
+
+
+{% endblock %}

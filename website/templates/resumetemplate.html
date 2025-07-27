@@ -1,56 +1,69 @@
 {% extends "base.html" %}
 {% block title %}Create Resume | ResumeBuilder{% endblock %}
 
+{% block styles %}
+  {% if Resume.style == 'classic' %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/classic.css') }}">
+  {% else %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern.css') }}">
+  {% endif %}
+{% endblock %}
+
 {% block body %}
 <div class="profile-container">
   <div class="resume-form-container">
     <h2>Create Your Resume</h2>
-    <form id="profile-form" method="POST">
+    <form id="profile-form" method="POST" enctype="multipart/form-data">
+
+      <!-- Profile Picture Upload -->
+      <label for="profile_pic">Upload Profile Picture</label>
+      <input type="file" name="profile_pic" accept="image/*">
+
       <!-- Personal Info -->
       <label for="full_name">Full Name</label>
-      <input type="text" name="full_name" id="full_name" value="{{ PersonalInfo.full_name }}" required>
+      <input type="text" name="full_name" id="full_name" value="{{ PersonalInfo.full_name or '' }}" required>
 
       <label for="resume_email">Email</label>
-      <input type="email" name="resume_email" id="resume_email" value="{{ PersonalInfo.resume_email }}" required>
+      <input type="email" name="resume_email" id="resume_email" value="{{ PersonalInfo.resume_email or '' }}" required>
 
       <label for="phone">Phone Number</label>
-      <input type="tel" name="phone" id="phone" value="{{ PersonalInfo.phone }}" pattern="\d{10}" required>
+      <input type="tel" name="phone" id="phone" value="{{ PersonalInfo.phone or '' }}" pattern="\d{10}" required>
 
       <label for="github">GitHub Link</label>
-      <input type="url" name="github" id="github" value="{{ PersonalInfo.github }}" placeholder="GitHub Link">
+      <input type="url" name="github" id="github" value="{{ PersonalInfo.github or '' }}">
 
       <label for="linkedin">LinkedIn Link</label>
-      <input type="url" name="linkedin" id="linkedin" value="{{ PersonalInfo.linkedin }}" placeholder="LinkedIn Link">
+      <input type="url" name="linkedin" id="linkedin" value="{{ PersonalInfo.linkedin or '' }}">
 
       <label for="summary">Professional Summary</label>
-      <textarea name="summary" id="summary" required>{{ PersonalInfo.summary }}</textarea>
+      <textarea name="summary" id="summary">{{ PersonalInfo.summary or '' }}</textarea>
 
       <!-- Education -->
       <h3>Education</h3>
-      <input type="text" name="degree" placeholder="Degree" value="{{ Education.degree }}">
-      <input type="text" name="institution" placeholder="Institution" value="{{ Education.institution }}">
-      <input type="text" name="start_year" placeholder="Start Year" value="{{ Education.start_year }}">
-      <input type="text" name="end_year" placeholder="End Year" value="{{ Education.end_year }}">
-      <textarea name="edu_description" placeholder="Education Description">{{ Education.description }}</textarea>
+      <input type="text" name="degree" placeholder="Degree" value="{{ Education.degree or '' }}">
+      <input type="text" name="institution" placeholder="Institution" value="{{ Education.institution or '' }}">
+      <input type="text" name="start_year" placeholder="Start Year" value="{{ Education.start_year or '' }}">
+      <input type="text" name="end_year" placeholder="End Year" value="{{ Education.end_year or '' }}">
+      <textarea name="edu_description">{{ Education.description or '' }}</textarea>
 
       <!-- Experience -->
       <h3>Experience</h3>
-      <input type="text" name="job_title" placeholder="Job Title" value="{{ Experience.job_title }}">
-      <input type="text" name="company" placeholder="Company" value="{{ Experience.company }}">
-      <input type="text" name="start_date" placeholder="Start Date" value="{{ Experience.start_date }}">
-      <input type="text" name="end_date" placeholder="End Date" value="{{ Experience.end_date }}">
-      <textarea name="exp_description" placeholder="Experience Description">{{ Experience.description }}</textarea>
+      <input type="text" name="job_title" placeholder="Job Title" value="{{ Experience.job_title or '' }}">
+      <input type="text" name="company" placeholder="Company" value="{{ Experience.company or '' }}">
+      <input type="text" name="start_date" placeholder="Start Date" value="{{ Experience.start_date or '' }}">
+      <input type="text" name="end_date" placeholder="End Date" value="{{ Experience.end_date or '' }}">
+      <textarea name="exp_description">{{ Experience.description or '' }}</textarea>
 
       <!-- Projects -->
       <h3>Projects</h3>
-      <input type="text" name="project_title" placeholder="Project Title" value="{{ Project.title }}">
-      <textarea name="project_description" placeholder="Project Description">{{ Project.description }}</textarea>
-      <input type="text" name="tech_stack" placeholder="Tech Stack" value="{{ Project.tech_stack }}">
-      <input type="url" name="project_link" placeholder="Project Link" value="{{ Project.link }}">
+      <input type="text" name="project_title" placeholder="Project Title" value="{{ Project.title or '' }}">
+      <textarea name="project_description">{{ Project.description or '' }}</textarea>
+      <input type="text" name="tech_stack" placeholder="Tech Stack" value="{{ Project.tech_stack or '' }}">
+      <input type="url" name="project_link" placeholder="Project Link" value="{{ Project.link or '' }}">
 
       <!-- Skills -->
       <h3>Skills</h3>
-      <input type="text" name="skill_name" placeholder="Skill Name" value="{{ Skill.name }}">
+      <input type="text" name="skill_name" placeholder="Skill Name" value="{{ Skill.name or '' }}">
       <select name="skill_level">
         <option value="beginner" {% if Skill.level == 'beginner' %}selected{% endif %}>Beginner</option>
         <option value="intermediate" {% if Skill.level == 'intermediate' %}selected{% endif %}>Intermediate</option>
@@ -59,22 +72,13 @@
 
       <!-- Certifications -->
       <h3>Certifications</h3>
-      <input type="text" name="cert_name" placeholder="Certification Name" value="{{ Certification.name }}">
-      <input type="text" name="issuer" placeholder="Issuer" value="{{ Certification.issuer }}">
-      <input type="text" name="issue_date" placeholder="Issue Date" value="{{ Certification.issue_date }}">
-      <input type="url" name="credential_link" placeholder="Credential Link" value="{{ Certification.credential_link }}">
+      <input type="text" name="cert_name" placeholder="Certification Name" value="{{ Certification.name or '' }}">
+      <input type="text" name="issuer" placeholder="Issuer" value="{{ Certification.issuer or '' }}">
+      <input type="date" name="issue_date" value="{{ Certification.issue_date or '' }}">
+      <input type="url" name="credential_link" placeholder="Credential Link" value="{{ Certification.credential_link or '' }}">
 
       <button type="submit" class="resume-save-btn">Save Resume</button>
     </form>
   </div>
 </div>
 {% endblock %}
-
-{% block styles %}
-  {% if Resume.style == 'classic' %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/classic.css') }}">
-  {% else %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern.css') }}">
-  {% endif %}
-{% endblock %}
- 

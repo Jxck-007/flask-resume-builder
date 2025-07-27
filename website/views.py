@@ -1,10 +1,13 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from .models import *
-import os
+from weasyprint import HTML
+import os , tempfile
 
 views = Blueprint('views', __name__)
+
+UPLOAD_FOLDER = 'static/uploads/'
 
 @views.route('/home', methods=['GET', 'POST'])
 @login_required
@@ -17,10 +20,17 @@ def home():
         linkedin = request.form.get('linkedin')
         summary = request.form.get('summary')
         style = request.form.get('template')
+        profile_pic = request.files.get('profile_pic')
 
         if not full_name or not resume_email:
             flash("Full Name and Resume Email are required.", "danger")
             return redirect(url_for('views.home'))
+
+        filename = 'default.jpg'
+        if profile_pic and profile_pic.filename != '':
+            filename = secure_filename(profile_pic.filename)
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            profile_pic.save(filepath)
 
         resume = Resume(user_id=current_user.id, title=f"{full_name}'s Resume", style=style)
         db.session.add(resume)
@@ -34,7 +44,7 @@ def home():
             github=github,
             linkedin=linkedin,
             summary=summary,
-            profile_pic='default.jpg'
+            profile_pic=filename
         )
         db.session.add(info)
         db.session.commit()
@@ -66,6 +76,14 @@ def create_resume(resume_id):
         info.github = request.form.get('github')
         info.linkedin = request.form.get('linkedin')
         info.summary = request.form.get('summary')
+
+        profile_pic = request.files.get('profile_pic')
+        if profile_pic and profile_pic.filename != '':
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+            filename = secure_filename(profile_pic.filename)
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            profile_pic.save(filepath)
+
 
         if not education:
             education = Education(resume_id=resume.id)
@@ -130,15 +148,54 @@ def view_resume(resume_id):
                            experience=experience, project=project, skill=skill,
                            certification=certification)
 
-@views.route('/resume/delete/<int:resume_id>', methods=['POST'])
+@views.route('/resume/manage')
+@login_required
+def manage_resumes():
+    resumes = Resume.query.filter_by(user_id=current_user.id).all()
+    return render_template("manage.html", resumes=resumes)
+
+@views.route('/resume/delete/<int:resume_id>')
 @login_required
 def delete_resume(resume_id):
     resume = Resume.query.get_or_404(resume_id)
     if resume.user_id != current_user.id:
         flash("Unauthorized", "danger")
-        return redirect(url_for('views.home'))
+        return redirect(url_for('views.manage_resumes'))
 
+    PersonalInfo.query.filter_by(resume_id=resume.id).delete()
+    Education.query.filter_by(resume_id=resume.id).delete()
+    Experience.query.filter_by(resume_id=resume.id).delete()
+    Project.query.filter_by(resume_id=resume.id).delete()
+    Skill.query.filter_by(resume_id=resume.id).delete()
+    Certification.query.filter_by(resume_id=resume.id).delete()
     db.session.delete(resume)
     db.session.commit()
-    flash("Resume deleted successfully!", "success")
-    return redirect(url_for('views.profile'))
+
+    flash("Resume deleted.", "success")
+    return redirect(url_for('views.manage_resumes'))
+@views.route('/resume/download/<int:resume_id>')
+@login_required
+def download_resume(resume_id):
+    resume = Resume.query.get_or_404(resume_id)
+    if resume.user_id != current_user.id:
+        flash("Unauthorized", "danger")
+        return redirect(url_for('views.manage_resumes'))
+
+    info = PersonalInfo.query.filter_by(resume_id=resume.id).first()
+    education = Education.query.filter_by(resume_id=resume.id).first()
+    experience = Experience.query.filter_by(resume_id=resume.id).first()
+    project = Project.query.filter_by(resume_id=resume.id).first()
+    skill = Skill.query.filter_by(resume_id=resume.id).first()
+    certification = Certification.query.filter_by(resume_id=resume.id).first()
+
+    rendered_html = render_template("resume_base.html", resume=resume, info=info,
+                                    education=education, experience=experience,
+                                    project=project, skill=skill,
+                                    certification=certification)
+
+    # 🛠️ Important: static folder as base_url so WeasyPrint can find css/images
+    base_path = os.path.abspath("static")
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        HTML(string=rendered_html, base_url=base_path).write_pdf(tmp.name)
+        return send_file(tmp.name, as_attachment=True, download_name=f"{resume.title}.pdf")

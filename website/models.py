@@ -23,10 +23,6 @@ class Resume(db.Model):
     projects = db.relationship('Project', backref='resume', cascade="all, delete", lazy=True)
     skills = db.relationship('Skill', backref='resume', cascade="all, delete", lazy=True)
     certifications = db.relationship('Certification', backref='resume', cascade="all, delete", lazy=True)
-
-# --------------------------
-# 👤 Personal Info (One per Resume)
-# --------------------------
 class PersonalInfo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     resume_id = db.Column(db.Integer, db.ForeignKey('resume.id'), unique=True)

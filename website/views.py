@@ -2,12 +2,12 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from .models import *
-from weasyprint import HTML
-import os , tempfile
+import os
+import asyncio
+from playwright.async_api import async_playwright
 
 views = Blueprint('views', __name__)
-
-UPLOAD_FOLDER = 'static/uploads/'
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
 
 @views.route('/home', methods=['GET', 'POST'])
 @login_required
@@ -82,7 +82,12 @@ def create_resume(resume_id):
             os.makedirs(UPLOAD_FOLDER, exist_ok=True)
             filename = secure_filename(profile_pic.filename)
             filepath = os.path.join(UPLOAD_FOLDER, filename)
+            if info.profile_pic != 'default.jpg':
+                old_path = os.path.join(UPLOAD_FOLDER, info.profile_pic)
+                if os.path.exists(old_path):
+                    os.remove(old_path)
             profile_pic.save(filepath)
+            info.profile_pic = filename 
 
 
         if not education:
@@ -161,17 +166,22 @@ def delete_resume(resume_id):
     if resume.user_id != current_user.id:
         flash("Unauthorized", "danger")
         return redirect(url_for('views.manage_resumes'))
-
+    info = PersonalInfo.query.filter_by(resume_id=resume.id).first()
+    if info and info.profile_pic and info.profile_pic != 'default.jpg':
+        img_path = os.path.join(UPLOAD_FOLDER, info.profile_pic)
+        if os.path.exists(img_path):
+            os.remove(img_path)
     PersonalInfo.query.filter_by(resume_id=resume.id).delete()
     Education.query.filter_by(resume_id=resume.id).delete()
     Experience.query.filter_by(resume_id=resume.id).delete()
     Project.query.filter_by(resume_id=resume.id).delete()
     Skill.query.filter_by(resume_id=resume.id).delete()
     Certification.query.filter_by(resume_id=resume.id).delete()
+
     db.session.delete(resume)
     db.session.commit()
 
-    flash("Resume deleted.", "success")
+    flash("Resume and image deleted successfully.", "success")
     return redirect(url_for('views.manage_resumes'))
 @views.route('/resume/download/<int:resume_id>')
 @login_required
@@ -188,14 +198,45 @@ def download_resume(resume_id):
     skill = Skill.query.filter_by(resume_id=resume.id).first()
     certification = Certification.query.filter_by(resume_id=resume.id).first()
 
-    rendered_html = render_template("resume_base.html", resume=resume, info=info,
-                                    education=education, experience=experience,
-                                    project=project, skill=skill,
-                                    certification=certification)
+    # Absolute paths for image and CSS
+    static_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), 'static'))
+    image_path = os.path.join(static_folder, 'uploads', info.profile_pic or 'default.jpg')
+    css_path = os.path.join(static_folder, 'css', f"{resume.style}.css")
 
-    # 🛠️ Important: static folder as base_url so WeasyPrint can find css/images
-    base_path = os.path.abspath("static")
+    # Output paths
+    html_path = os.path.join(static_folder, f"resume_{resume_id}.html")
+    pdf_path = os.path.join(static_folder, f"resume_{resume_id}.pdf")
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        HTML(string=rendered_html, base_url=base_path).write_pdf(tmp.name)
-        return send_file(tmp.name, as_attachment=True, download_name=f"{resume.title}.pdf")
+    # Render HTML and write to file
+    html = render_template("resume_base.html", resume=resume, info=info,
+                           education=education, experience=experience,
+                           project=project, skill=skill, certification=certification,
+                           is_download=True,
+                           static_image_path=image_path,
+                           css_path=css_path)
+
+    with open(html_path, "w", encoding="utf-8") as f:
+        f.write(html)
+
+    async def generate_pdf():
+        from playwright.async_api import async_playwright
+        async with async_playwright() as p:
+            browser = await p.chromium.launch()
+            context = await browser.new_context()
+            page = await context.new_page()
+            file_url = f"file:///{html_path.replace(os.sep, '/')}"
+            await page.goto(file_url, wait_until="networkidle")
+            await page.pdf(path=pdf_path, format="A4", print_background=True)
+            await browser.close()
+
+    try:
+        asyncio.run(generate_pdf())
+    except Exception as e:
+        flash(f"PDF generation failed: {str(e)}", "danger")
+        return redirect(url_for('views.manage_resumes'))
+
+    if not os.path.exists(pdf_path):
+        flash("PDF was not generated properly.", "danger")
+        return redirect(url_for('views.manage_resumes'))
+
+    return send_file(pdf_path, as_attachment=True, download_name=f"{resume.title}.pdf")

@@ -1,21 +1,31 @@
 {% extends "base.html" %}
 
 {% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/' + resume.style + '.css') }}">
+  {% if is_download %}
+    <link rel="stylesheet" href="file:///{{ css_path | replace('\\', '/') }}">
+  {% else %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/' + resume.style + '.css') }}">
+  {% endif %}
 {% endblock %}
+
 
 {% block body %}
 <div class="resume-container">
   <div class="left-panel">
-    <div class="profile-pic">
-      {% if info.profile_pic and info.profile_pic != 'default.jpg' %}
-        <img src="uploads/{{ info.profile_pic }}" alt="Profile Picture">
+<div class="profile-pic">
+  {% if is_download %}
+    <img src="file:///{{ static_image_path | replace('\\', '/') }}" alt="Profile Picture">
+  {% elif info.profile_pic and info.profile_pic != 'default.jpg' %}
+    <img src="{{ url_for('static', filename='uploads/' + info.profile_pic) }}" alt="Profile Picture">
+  {% else %}
+    <img src="{{ url_for('static', filename='uploads/default.jpg') }}" alt="Default Profile Picture">
+  {% endif %}
+</div>
 
-      {% else %}
-        <img src="uploads/{{ 'default.jpg' }}" alt="Default Picture">
 
-      {% endif %}
+
     </div>
+
     <h1>{{ info.full_name }}</h1>
     <p>{{ info.resume_email }}</p>
     <p>{{ info.phone }}</p>
